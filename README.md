@@ -1,6 +1,9 @@
 # Asynk - Drupal Asynchronous Tasks
 Run asynchronous tasks in Drupal easily.
 
+### Installation:
+Install as normal Drupal module and activate.
+
 ### Sample Usage:
 Register asynchronous task for a heavy function.
 ```php
