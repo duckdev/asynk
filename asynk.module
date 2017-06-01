@@ -2,26 +2,15 @@
 
 /**
  * @file
- * Module file for registration related actions.
+ * Module file for Asynk asynchronous actions.
  */
 
 /**
  * Implements Asynchronous actions.
  */
-function asynk_init() {
+function asynk() {
 
-  if (isset($_GET['asynk'])) {
-    asynk('test', $_GET['asynk']);
-  }
-}
-
-/**
- * Implements Asynchronous actions.
- */
-function asynk($action, $data) {
-
-  $params = array('asynk_request', $data);
-  //register_shutdown_function('asynk_request');
+  $params = array_merge(array('asynk_request'), func_get_args());
   call_user_func_array('register_shutdown_function', $params);
 }
 
@@ -30,12 +19,10 @@ function asynk($action, $data) {
  */
 function asynk_request() {
 
-  $args = func_get_args();
-  $data['title'] = $args[0];
   $options = array(
     'method' => 'POST',
-    'data' => drupal_http_build_query($data),
-    'timeout' => 15,
+    'data' => drupal_http_build_query(func_get_args()),
+    'timeout' => 2,
     'headers' => array('Content-Type' => 'application/x-www-form-urlencoded'),
   );
   drupal_http_request(url('asynk', array('absolute' => TRUE)), $options);
@@ -64,8 +51,17 @@ function asynk_menu() {
  */
 function asynk_request_handler() {
 
-  $title = $_POST['title'];
+  $data = $_POST;
+  if (!empty($_POST['0'])) {
+    unset($data['0']);
+    call_user_func_array($_POST['0'], $data);
+    exit();
+  }
+}
+
+function asynk_test($title, $title2) {
+
   $node = node_load(1);
-  $node->title = $title;
+  $node->title = $title2;
   node_save($node);
 }
