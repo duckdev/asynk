@@ -2,42 +2,97 @@
 
 /**
  * @file
- * Module file for Asynk asynchronous actions.
+ * Module file for Asynk asynchronous tasks.
  */
 
 /**
- * Implements Asynchronous actions.
+ * Executes registered asynchronous tasks.
+ *
+ * In order to execute any function asynchronously call them using
+ * this function with arguments for the task.
+ * Example usage:
+ *  asynk('sample_heavy_task', $var1, $var2);
+ * In the above example, we are executing function simple_heavy_task()
+ * asynchronously with arguments $var1 and $var2.
+ * Example usage 2:
+ *  asynk('drupal_mail', $module, $key, $to, $lan, $params);
+ * In the above example, we are sending email using drupal_mail().
+ *
+ * @param string $action
+ *   The function name which needs to be executed asynchronously.
  */
-function asynk() {
+function asynk($action) {
 
-  $params = array_merge(array('asynk_request'), func_get_args());
+  // Get all arguments from the function.
+  $args = func_get_args();
+
+  // We need atleast one argument, which is the function name
+  // that we need to run asynchronously.
+  if (empty($action)) {
+    throw new Exception('Action not given for Asynk.');
+  }
+
+  // First argument of the shutdown function should be
+  // our custom asynchronous action.
+  $params = array('asynk_request');
+  // Pass the additional arguments.
+  $params = array_merge($params, $args);
+
+  // Register our custom shutdown function for asynchronous
+  // tasks, with additional arguments as arguments.
   call_user_func_array('register_shutdown_function', $params);
 }
 
 /**
- * Asynk reques.
+ * Asynk custom HTTP request for asynchronous tasks.
+ *
+ * Here is the trick. We are sending a POST HTTP request
+ * to our custom callback function with the arguments as
+ * post data. We have low timout limit so the maximum execution
+ * time for the asynchronous actions will be very less.
+ * Adjust the timeout limit for large arguments.
  */
 function asynk_request() {
 
+  // Get all arguments from the function.
+  $data = func_get_args();
+
+  // If there are arguments available, build query.
+  if (!empty($args)) {
+    $data = drupal_http_build_query($data)
+  }
+
+  // Timeout for HTTP request.
+  $timeout = 2;
+  // Other modules can alter this timeout limit.
+  // We are not going to wait for HTTP response.
+  // So no need to make it high.
+  drupal_alter('asynk_http_timeout', $timeout);
+
+  // Options for Drupal HTTP request.
   $options = array(
     'method' => 'POST',
-    'data' => drupal_http_build_query(func_get_args()),
-    'timeout' => 2,
+    'data' => $data,
+    'timeout' => $timeout,
     'headers' => array('Content-Type' => 'application/x-www-form-urlencoded'),
   );
+
+  // Send post data to our custom page with arguments data.
   drupal_http_request(url('asynk', array('absolute' => TRUE)), $options);
 }
 
 /**
  * Implements hook_theme().
  *
- * Use our custom designed template for registration form.
+ * Create a custom page to handle our HTTP request
+ * for asynchronous actions. This is a public link
+ * which does not require any authentication.
+ *
+ * @todo Add security token to avoid CSRF exploit.
  */
 function asynk_menu() {
 
-  $items = array();
-
-  // Linkage request reject.
+  // Our custom page.
   $items['asynk'] = array(
     'access callback' => TRUE,
     'page callback' => 'asynk_request_handler',
@@ -47,21 +102,28 @@ function asynk_menu() {
 }
 
 /**
- * Request handler.
+ * Request handler for asynchronous tasks.
+ *
+ * Finally! Execute our heavy function now.
+ * Get the function name from $_POST and execute it right away.
+ * If there are additional arguments, it should be available
+ * in post data. We need to pass them to the heavy function.
+ * $_POST data will be numerice keyed array. The first item
+ * will be our heavy function name. If it is not set, bail out.
  */
 function asynk_request_handler() {
 
+  // Get post data.
   $data = $_POST;
-  if (!empty($_POST['0'])) {
+
+  // Continue only if we have function name in post.
+  if (!empty($data['0']) && is_string($data['0'])) {
+    // We don't need the function name as argument.
     unset($data['0']);
+    // Execute the heavy function now.
     call_user_func_array($_POST['0'], $data);
-    exit();
   }
-}
 
-function asynk_test($title, $title2) {
-
-  $node = node_load(1);
-  $node->title = $title2;
-  node_save($node);
+  // Exit the execution after the request.
+  exit();
 }
