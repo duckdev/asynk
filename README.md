@@ -11,6 +11,7 @@ Heavy resource task for execution
 ```php
 // Send email to 10 people.
 function sample_heavy_task($key, $lan) {
+
   for ($i = 0; $i < 10; $i ++) {
     drupal_mail('my_module', $key, 'sample@sample.com', $lan);
   }
