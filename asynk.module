@@ -29,7 +29,7 @@ function asynk($action) {
   // We need atleast one argument, which is the function name
   // that we need to run asynchronously.
   if (empty($action)) {
-    throw new Exception('Action not given for Asynk.');
+    throw new Exception('An existing function name is required as first argument');
   }
 
   // First argument of the shutdown function should be
@@ -62,7 +62,7 @@ function asynk_request() {
 
   // If there are arguments available, build query.
   if (!empty($args)) {
-    $data = drupal_http_build_query($data)
+    $data = drupal_http_build_query($data);
   }
 
   // Timeout for HTTP request.
