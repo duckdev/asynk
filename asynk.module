@@ -57,6 +57,9 @@ function asynk_request() {
   // Get all arguments from the function.
   $data = func_get_args();
 
+  // Create a security token.
+  $data['asynk_token'] = drupal_get_token('asynk_token');
+
   // If there are arguments available, build query.
   if (!empty($args)) {
     $data = drupal_http_build_query($data)
@@ -94,11 +97,34 @@ function asynk_menu() {
 
   // Our custom page.
   $items['asynk'] = array(
-    'access callback' => TRUE,
+    'access callback' => 'asynk_access_callback',
     'page callback' => 'asynk_request_handler',
   );
 
   return $items;
+}
+
+/**
+ * Access check for Asynk HTTP request.
+ *
+ * Validate the current request to our custom
+ * asynk request handler page. We need to verify
+ * access to this page is only for our module.
+ * Otherwise attackers can send post request to
+ * execute any actions easily.
+ *
+ * @return bool
+ *   Valid request or not.
+ */
+function asynk_access_callback() {
+
+  // If token not found in post.
+  if (empty($_POST['asynk_token'])) {
+    return FALSE;
+  }
+
+  // Validate the token value.
+  return drupal_valid_token($_POST['asynk_token'], 'asynk_token');
 }
 
 /**
