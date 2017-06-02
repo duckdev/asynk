@@ -55,7 +55,7 @@ function asynk($action) {
 function asynk_request() {
 
   // Get all arguments from the function.
-  $data = func_get_args();
+  $data['args'] = func_get_args();
 
   // We need our heavy function name as first argument.
   if (empty($data)) {
@@ -63,7 +63,7 @@ function asynk_request() {
   }
 
   // Create a security token.
-  $data[] = drupal_get_token('asynk_token');
+  $data['asynk_token'] = drupal_get_token('asynk_token');
 
   // Build query from data.
   $data = drupal_http_build_query($data);
@@ -98,11 +98,11 @@ function asynk_request() {
  */
 function asynk_menu() {
 
-  $items = array();
   // Our custom page.
   $items['asynk'] = array(
-    'access callback' => TRUE,
+    'title' => 'Asynk',
     'page callback' => 'asynk_request_handler',
+    'access callback' => 'asynk_access_callback',
   );
 
   return $items;
@@ -116,6 +116,7 @@ function asynk_menu() {
  * access to this page is only for our module.
  * Otherwise attackers can send post request to
  * execute any actions easily.
+ * TODO: Implement more reliable, secure token.
  *
  * @return bool
  *   Valid request or not.
@@ -128,7 +129,7 @@ function asynk_access_callback() {
   }
 
   // Validate the token value.
-  return drupal_valid_token($_POST['asynk_token'], 'asynk_token');
+  return drupal_valid_token($_POST['asynk_token'], 'asynk_token', TRUE);
 }
 
 /**
@@ -144,14 +145,14 @@ function asynk_access_callback() {
 function asynk_request_handler() {
 
   // Get post data.
-  $data = $_POST;
+  $data = empty($_POST['args']) ? array() : $_POST['args'];
 
   // Continue only if we have function name in post.
-  if (!empty($data['0']) && is_string($data['0'])) {
+  if (!empty($data[0])) {
     // We don't need the function name as argument.
-    unset($data['0']);
+    unset($data[0]);
     // Execute the heavy function now.
-    call_user_func_array($_POST['0'], $data);
+    call_user_func_array($_POST['args'][0], $data);
   }
 
   // Exit the execution after the request.
