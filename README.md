@@ -20,3 +20,5 @@ function sample_heavy_task($key, $lan) {
   }
 }
 ```
+### Limitations:
+Only you can not pass object as a parameter. It will be converted to array automatically through `$_POST`.
